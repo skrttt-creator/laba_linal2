@@ -254,7 +254,6 @@ if __name__ == "main":
     print(f"Recall:    {rec:.4f}")
     print(f"F1-Score:  {f1:.4f}\n")
 
-    # Отрисовка графиков
     # График ошибки
     plt.figure(figsize=(8, 5))
     plt.plot(model.train_losses, label='Train Loss')
