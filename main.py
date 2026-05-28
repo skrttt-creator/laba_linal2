@@ -4,7 +4,6 @@ from sklearn.model_selection import train_test_split
 
 #  Задача №1
 def generate_gaussian_data(n_samples=500, distance=2.5, seed=42):
-    """генерирует два облака точек (классы 0 и 1) из нормального распределения."""
     np.random.seed(seed)
     n_class = n_samples // 2
     
@@ -26,7 +25,7 @@ def accuracy(y_true, y_pred):
     return np.mean(y_true == y_pred)
 
 def precision_recall_f1(y_true, y_pred):
-    """расчет Precision, Recall и F1-score"""
+    print("расчет Precision, Recall и F1-score")
     tp = np.sum((y_true == 1) & (y_pred == 1))
     fp = np.sum((y_true == 0) & (y_pred == 1))
     fn = np.sum((y_true == 1) & (y_pred == 0))
@@ -38,7 +37,7 @@ def precision_recall_f1(y_true, y_pred):
     return precision, recall, f1
 
 def plot_roc_curve(y_true, y_probs):
-    """Построение roc-кривой"""
+    print("Построение roc-кривой")
     thresholds = np.linspace(0, 1, 100)
     tpr_list, fpr_list = [], []
     
@@ -166,10 +165,10 @@ class Perceptron:
         return (self.predict_proba(X) >= 0.5).astype(int)
 
 
-# 4. cross validation (Задача №5)
+# cross validation (Задача №5)
 
 def k_fold_cv(X, y, k=5, lr=0.1, batch_size=32, momentum=0.0):
-    """разбивает данные на K частей, обучает K моделей и возвращает среднюю точность"""
+    print("разбивает данные на K частей, обучает K моделей и возвращает среднюю точность")
     n_samples = len(X)
     fold_size = n_samples // k
     indices = np.arange(n_samples)
