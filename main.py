@@ -3,23 +3,32 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 
 #  Задача №1
-def generate_gaussian_data(n_samples=500, distance=2.5, seed=42):
+def generate_data(n_samples=500, type='blobs', noise=0.0, seed=42):
     np.random.seed(seed)
-    n_class = n_samples // 2
     
-    X0 = np.random.randn(n_class, 2)
-    y0 = np.zeros(n_class)
-    
-    X1 = np.random.randn(n_class, 2) + np.array([distance, distance])
-    y1 = np.ones(n_class)
-    
-    X = np.vstack([X0, X1])
-    y = np.concatenate([y0, y1])
-    
+    if type == 'blobs':
+        n_class = n_samples // 2
+        X = np.random.randn(n_samples, 2)
+        X[:n_class] += 2.5 
+        y = np.array([0]*n_class + [1]*n_class)
+        
+    elif type == 'xor':
+        X = np.random.randn(n_samples, 2)
+        y = (X[:, 0] * X[:, 1] > 0).astype(int)
+        
+    elif type == 'circle':
+        X = np.random.randn(n_samples, 2)
+        dist = np.linalg.norm(X, axis=1)
+        y = (dist > 1.0).astype(int) 
+        
+    if noise > 0:
+        n_flip = int(noise * n_samples)
+        flip_indices = np.random.choice(n_samples, n_flip, replace=False)
+        y[flip_indices] = 1 - y[flip_indices] 
+
     indices = np.arange(n_samples)
     np.random.shuffle(indices)
     return X[indices], y[indices]
-
 # Задача №3)
 def accuracy(y_true, y_pred):
     return np.mean(y_true == y_pred)
@@ -36,6 +45,12 @@ def precision_recall_f1(y_true, y_pred):
     
     return precision, recall, f1
 
+
+def add_polynomial_features(X):
+    x1 = X[:, 0:1]
+    x2 = X[:, 1:2]
+    return np.hstack([X, x1 * x2, x1**2, x2**2])
+    
 def plot_roc_curve(y_true, y_probs):
     print("Построение roc-кривой")
     thresholds = np.linspace(0, 1, 100)
@@ -192,33 +207,41 @@ def k_fold_cv(X, y, k=5, lr=0.1, batch_size=32, momentum=0.0):
         
     return np.mean(val_accuracies)
 
-def plot_decision_boundary(X, y, model, title="Decision Boundary"):
+def plot_decision_boundary(X, y, model, transform_fn=None, title="Decision Boundary"):
     plt.figure(figsize=(8, 6))
-    plt.scatter(X[y == 0][:, 0], X[y == 0][:, 1], color='red', label='Class 0', alpha=0.6)
-    plt.scatter(X[y == 1][:, 0], X[y == 1][:, 1], color='blue', label='Class 1', alpha=0.6)
-
+    
     x_min, x_max = X[:, 0].min() - 1, X[:, 0].max() + 1
-    w1, w2 = model.w
-    b = model.b
+    y_min, y_max = X[:, 1].min() - 1, X[:, 1].max() + 1
+    xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.05),
+                         np.arange(y_min, y_max, 0.05))
+    
+    grid = np.c_[xx.ravel(), yy.ravel()]
+    
+    if transform_fn is not None:
+        grid = transform_fn(grid)
+        
+    Z = model.predict(grid)
+    Z = Z.reshape(xx.shape)
+    
+    plt.contourf(xx, yy, Z, alpha=0.3, cmap=['#ff9999', '#9999ff'][0] if Z.min()==0 else 'RdYlBu')
+    plt.contour(xx, yy, Z, colors='k', linewidths=1)
 
-    if w2 != 0:
-        x_values = np.array([x_min, x_max])
-        y_values = -(w1 * x_values + b) / w2
-        plt.plot(x_values, y_values, 'k--', label='Boundary')
+    plt.scatter(X[y == 0][:, 0], X[y == 0][:, 1], color='red', label='Class 0', alpha=0.8, edgecolors='k')
+    plt.scatter(X[y == 1][:, 0], X[y == 1][:, 1], color='blue', label='Class 1', alpha=0.8, edgecolors='k')
 
     plt.xlim(x_min, x_max)
-    plt.ylim(X[:, 1].min() - 1, X[:, 1].max() + 1)
+    plt.ylim(y_min, y_max)
     plt.title(title)
     plt.legend()
-    plt.grid()
+    plt.grid(True, linestyle='--', alpha=0.5)
     plt.show()
 
 
 
-
-
-if __name__ == "main":
-    X, y = generate_gaussian_data(n_samples=600, distance=2.0)
+if __name__ == "__main__":
+    data_type = 'blobs'  #Выбираем тип данных(blobs xor circle)
+    
+    X, y = generate_data(n_samples=600, type=data_type, noise=0.05)
     
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     mean, std = X_train.mean(axis=0), X_train.std(axis=0)
@@ -254,7 +277,6 @@ if __name__ == "main":
     print(f"Recall:    {rec:.4f}")
     print(f"F1-Score:  {f1:.4f}\n")
 
-    # График ошибки
     plt.figure(figsize=(8, 5))
     plt.plot(model.train_losses, label='Train Loss')
     plt.plot(model.val_losses, label='Test Loss')
@@ -265,7 +287,6 @@ if __name__ == "main":
     plt.grid()
     plt.show()
 
-    # Разделяющая граница
     plot_decision_boundary(X_test, y_test, model, "разделяющая граница")
 
     # ROC Кривая
