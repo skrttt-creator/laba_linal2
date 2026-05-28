@@ -217,7 +217,7 @@ def plot_decision_boundary(X, y, model, title="Decision Boundary"):
 
 
 
-if __name__ == "__main__":
+if __name__ == "main":
     X, y = generate_gaussian_data(n_samples=600, distance=2.0)
     
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
